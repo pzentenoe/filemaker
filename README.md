@@ -55,7 +55,7 @@ func main() {
 		serviceRecord = filemaker.NewRecordService("DatabaseName", "LayoutName", client)
 		
         //List(offset, limit, sorter)
-		data, err = serviceRecord.List("1", "10", filemaker.NewSorter("Sol_Nombres", filemaker.Descending))
+		data, err = serviceRecord.List("1", "10", filemaker.NewSorter("FieldName", filemaker.Descending))
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -63,9 +63,9 @@ func main() {
 		fmt.Println(data)
 	
 
-	searchService := filemaker.NewSearchService("LP", "WEB_Solicitantes", client)
+	searchService := filemaker.NewSearchService("DatabaseName", "LayoutName", client)
 	data, err = searchService.
-		Queries(filemaker.NewQueryFieldOperator("Sol_Nombres", "LUIS ALBERTO", filemaker.Equal)).
+		Queries(filemaker.NewQueryFieldOperator("FieldName", "LUIS ALBERTO", filemaker.Equal)).
 		SetOffset("1").SetLimit("10").
 		//Sorters(filemaker.NewSorter("Sol_Nombres", filemaker.Descending)).
 		Do()
