@@ -1,0 +1,83 @@
+package filemaker
+
+import (
+	"fmt"
+	"net/http"
+)
+
+type SearchService interface {
+	Do() (interface{}, error)
+}
+
+const findQueryPath = "fmi/data/%s/databases/%s/layouts/%s/_find"
+
+type searchService struct {
+	client    *client
+	database  string
+	layout    string
+	seachData *searchData
+}
+
+func NewSearchService(database, layout string, client *client) *searchService {
+	searchData := new(searchData)
+	searchData.Query = make([]map[string]string, 0)
+	return &searchService{
+		client:    client,
+		database:  database,
+		layout:    layout,
+		seachData: searchData,
+	}
+}
+
+type searchData struct {
+	Query  []map[string]string `json:"query"`
+	Limit  string              `json:"limit,omitempty"`
+	Offset string              `json:"offset,omitempty"`
+	Sort   []*Sorter           `json:"sort,omitempty"`
+}
+
+func (s *searchService) Queries(queryFields ...*queryFieldOperator) *searchService {
+	queries := make([]map[string]string, 0)
+	for _, queryField := range queryFields {
+		queryMap := make(map[string]string)
+		value := queryField.valueWithOp()
+		queryMap[queryField.Name] = value
+		queries = append(queries, queryMap)
+	}
+	s.seachData.Query = queries
+	return s
+}
+
+func (s *searchService) SetOffset(offset string) *searchService {
+	s.seachData.Offset = offset
+	return s
+}
+
+func (s *searchService) SetLimit(limit string) *searchService {
+	s.seachData.Limit = limit
+	return s
+}
+func (s *searchService) Sorters(sorters ...*Sorter) *searchService {
+	s.seachData.Sort = sorters
+	return s
+}
+
+func (s *searchService) Do() (*ResponseData, error) {
+
+	responseAuth, err := s.client.Connect(s.database)
+	if err != nil {
+		return nil, err
+	}
+	defer s.client.Disconnect(s.database, responseAuth.Response.Token)
+
+	path := fmt.Sprintf(findQueryPath, s.client.version, s.database, s.layout)
+
+	options := &performRequestOptions{
+		Method:  http.MethodPost,
+		Path:    path,
+		Body:    s.seachData,
+		Headers: http.Header{"Authorization": []string{fmt.Sprintf("Bearer %s", responseAuth.Response.Token)}},
+	}
+
+	return s.client.executeQuery(options)
+}
