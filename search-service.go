@@ -12,13 +12,13 @@ type SearchService interface {
 const findQueryPath = "fmi/data/%s/databases/%s/layouts/%s/_find"
 
 type searchService struct {
-	client    *client
+	client    *Client
 	database  string
 	layout    string
 	seachData *searchData
 }
 
-func NewSearchService(database, layout string, client *client) *searchService {
+func NewSearchService(database, layout string, client *Client) *searchService {
 	searchData := new(searchData)
 	searchData.Query = make([]map[string]string, 0)
 	return &searchService{

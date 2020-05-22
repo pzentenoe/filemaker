@@ -21,10 +21,10 @@ const recordsPath = "fmi/data/%s/databases/%s/layouts/%s/records"
 type recordService struct {
 	database string
 	layout   string
-	client   *client
+	client   *Client
 }
 
-func NewRecordService(database, layout string, client *client) *recordService {
+func NewRecordService(database, layout string, client *Client) *recordService {
 	return &recordService{
 		database: database,
 		layout:   layout,

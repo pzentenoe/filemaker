@@ -30,7 +30,7 @@ type performRequestOptions struct {
 	basicAuth   bool
 }
 
-type client struct {
+type Client struct {
 	mu         sync.RWMutex
 	url        string //URL with port or dns
 	username   string
@@ -39,8 +39,8 @@ type client struct {
 	httpClient *http.Client
 }
 
-func NewClient(options ...ClientOptions) (*client, error) {
-	c := &client{}
+func NewClient(options ...ClientOptions) (*Client, error) {
+	c := &Client{}
 	for _, option := range options {
 		if err := option(c); err != nil {
 			return nil, err
@@ -56,7 +56,7 @@ func NewClient(options ...ClientOptions) (*client, error) {
 	return c, nil
 }
 
-func (c *client) executeQuery(options *performRequestOptions) (*ResponseData, error) {
+func (c *Client) executeQuery(options *performRequestOptions) (*ResponseData, error) {
 	response, err := c.performRequest(context.Background(), options)
 	if err != nil {
 		fmt.Errorf("Fail performRequest %s", err.Error())
@@ -84,7 +84,7 @@ func (c *client) executeQuery(options *performRequestOptions) (*ResponseData, er
 	return searchResponseData, nil
 }
 
-func (c *client) performRequest(ctx context.Context, opt *performRequestOptions) (*http.Response, error) {
+func (c *Client) performRequest(ctx context.Context, opt *performRequestOptions) (*http.Response, error) {
 
 	if c.url == "" {
 		return nil, errors.New("Empty URL")
@@ -130,7 +130,7 @@ func (c *client) performRequest(ctx context.Context, opt *performRequestOptions)
 
 type Request http.Request
 
-func (c *client) NewRequest(method, url string) (*Request, error) {
+func (c *Client) NewRequest(method, url string) (*Request, error) {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
@@ -225,6 +225,6 @@ func (r *Request) setBasicAuth(username, password string) {
 	((*http.Request)(r)).SetBasicAuth(username, password)
 }
 
-func (c *client) Do(req *http.Request) (*http.Response, error) {
+func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	return c.httpClient.Do(req)
 }

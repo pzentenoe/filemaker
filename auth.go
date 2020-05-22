@@ -18,7 +18,7 @@ type FmDatasource struct {
 	Password string `json:"password"`
 }
 
-func (c *client) Connect(database string) (*ResponseData, error) {
+func (c *Client) Connect(database string) (*ResponseData, error) {
 	c.mu.RLock()
 	path := fmt.Sprintf(sessionAuthPath, c.version, database)
 
@@ -35,7 +35,7 @@ func (c *client) Connect(database string) (*ResponseData, error) {
 	return response, err
 }
 
-func (c *client) ConnectWithDatasource(database string) (*ResponseData, error) {
+func (c *Client) ConnectWithDatasource(database string) (*ResponseData, error) {
 	c.mu.RLock()
 	path := fmt.Sprintf(sessionAuthPath, c.url, c.version, database)
 	datasource := FmDatasource{
@@ -59,7 +59,7 @@ func (c *client) ConnectWithDatasource(database string) (*ResponseData, error) {
 	return response, err
 }
 
-func (c *client) Disconnect(database, token string) (*ResponseData, error) {
+func (c *Client) Disconnect(database, token string) (*ResponseData, error) {
 	c.mu.RLock()
 	path := fmt.Sprintf(sessionAuthPath+"/%s", c.version, database, token)
 

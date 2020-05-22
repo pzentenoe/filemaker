@@ -9,10 +9,10 @@ const (
 	DefaultVersion = "vLatest"
 )
 
-type ClientOptions func(*client) error
+type ClientOptions func(*Client) error
 
 func SetURL(url string) ClientOptions {
-	return func(c *client) error {
+	return func(c *Client) error {
 		if url == "" {
 			return errors.New("Empty url")
 		}
@@ -22,7 +22,7 @@ func SetURL(url string) ClientOptions {
 }
 
 func SetUsername(username string) ClientOptions {
-	return func(c *client) error {
+	return func(c *Client) error {
 		if username == "" {
 			return errors.New("Empty username")
 		}
@@ -32,7 +32,7 @@ func SetUsername(username string) ClientOptions {
 }
 
 func SetPassword(password string) ClientOptions {
-	return func(c *client) error {
+	return func(c *Client) error {
 		if password == "" {
 			return errors.New("Empty password")
 		}
@@ -42,7 +42,7 @@ func SetPassword(password string) ClientOptions {
 }
 
 func SetVersion(version string) ClientOptions {
-	return func(c *client) error {
+	return func(c *Client) error {
 		if version == "" {
 			c.version = DefaultVersion
 		}
@@ -52,7 +52,7 @@ func SetVersion(version string) ClientOptions {
 }
 
 func SetHttpClient(httpClient *http.Client) ClientOptions {
-	return func(c *client) error {
+	return func(c *Client) error {
 		if httpClient == nil {
 			c.httpClient = http.DefaultClient
 		}
