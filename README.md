@@ -38,7 +38,7 @@ func main() {
 		filemaker.SetURL("https://localhost:port"),
 		filemaker.SetUsername("username"),
 		filemaker.SetPassword("password"),
-		filemaker.SetHttpClient(http.DefaultClient),//Optional o custom
+		filemaker.SetHttpClient(http.DefaultClient),//Optional or custom
 	)
 	if err != nil {
 
