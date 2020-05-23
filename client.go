@@ -58,30 +58,43 @@ func NewClient(options ...ClientOptions) (*Client, error) {
 
 func (c *Client) executeQuery(options *performRequestOptions) (*ResponseData, error) {
 	response, err := c.performRequest(context.Background(), options)
-	if err != nil {
+
+	var searchResponseData *ResponseData
+	if response == nil && err != nil {
 		fmt.Errorf("Fail performRequest %s", err.Error())
 		return nil, err
-	}
-	defer response.Body.Close()
+	} else if response != nil && err != nil {
+		defer response.Body.Close()
 
-	if response.StatusCode != http.StatusOK {
-		fmt.Println("Error response status", response.StatusCode)
-		return nil, errors.New(response.Status)
+		errFillResponse := fillSearchResponseFromHttpResponse(response, searchResponseData)
+		if errFillResponse != nil {
+			return nil, err
+		}
+	} else if err == nil {
+		defer response.Body.Close()
+
+		err := fillSearchResponseFromHttpResponse(response, searchResponseData)
+		if err != nil {
+			return nil, err
+		}
 	}
 
+	return searchResponseData, nil
+}
+
+func fillSearchResponseFromHttpResponse(response *http.Response, searchResponseData *ResponseData) error {
 	data, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		fmt.Errorf("Error to get response body : %s", err.Error())
-		return nil, err
+		return err
 	}
 
-	var searchResponseData *ResponseData
 	err = json.Unmarshal(data, &searchResponseData)
 	if err != nil {
 		fmt.Errorf("Error to Unmarshal QueryResponse %s", err.Error())
-		return nil, err
+		return err
 	}
-	return searchResponseData, nil
+	return nil
 }
 
 func (c *Client) performRequest(ctx context.Context, opt *performRequestOptions) (*http.Response, error) {
