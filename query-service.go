@@ -13,7 +13,7 @@ type QueryService interface {
 	Duplicate(recordId string) (*ResponseData, error)
 	Delete(recordId string) (*ResponseData, error)
 	GetById(recordId string) (*ResponseData, error)
-	List(offset, limit string, sorters ...Sorter) (*ResponseData, error)
+	List(offset, limit string, sorters ...*Sorter) (*ResponseData, error)
 }
 
 const recordsPath = "fmi/data/%s/databases/%s/layouts/%s/records"
@@ -48,7 +48,7 @@ func (s *recordService) Create(payload *Payload) (*ResponseData, error) {
 
 	path := fmt.Sprintf(recordsPath, s.client.version, s.database, s.layout)
 	options := &performRequestOptions{
-		Method:      http.MethodPatch,
+		Method:      http.MethodPost,
 		Path:        path,
 		ContentType: "application/json",
 		Body:        payload,
