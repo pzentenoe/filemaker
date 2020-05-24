@@ -59,42 +59,43 @@ func NewClient(options ...ClientOptions) (*Client, error) {
 func (c *Client) executeQuery(options *performRequestOptions) (*ResponseData, error) {
 	response, err := c.performRequest(context.Background(), options)
 
-	var searchResponseData *ResponseData
 	if response == nil && err != nil {
 		fmt.Errorf("Fail performRequest %s", err.Error())
 		return nil, err
-	} else if response != nil && err != nil {
+	}
+	var searchResponseData *ResponseData
+	if response != nil && err != nil {
 		defer response.Body.Close()
 
-		errFillResponse := fillSearchResponseFromHttpResponse(response, searchResponseData)
-		if errFillResponse != nil {
+		data, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			fmt.Errorf("Error to get response body : %s", err.Error())
 			return nil, err
 		}
-	} else if err == nil {
+
+		err = json.Unmarshal(data, &searchResponseData)
+		if err != nil {
+			fmt.Errorf("Error to Unmarshal QueryResponse %s", err.Error())
+			return searchResponseData, err
+		}
+
+	}
+	if err == nil {
 		defer response.Body.Close()
 
-		err := fillSearchResponseFromHttpResponse(response, searchResponseData)
+		data, err := ioutil.ReadAll(response.Body)
 		if err != nil {
+			fmt.Errorf("Error to get response body : %s", err.Error())
 			return nil, err
+		}
+		err = json.Unmarshal(data, &searchResponseData)
+		if err != nil {
+			fmt.Errorf("Error to Unmarshal QueryResponse %s", err.Error())
+			return searchResponseData, err
 		}
 	}
 
 	return searchResponseData, nil
-}
-
-func fillSearchResponseFromHttpResponse(response *http.Response, searchResponseData *ResponseData) error {
-	data, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		fmt.Errorf("Error to get response body : %s", err.Error())
-		return err
-	}
-
-	err = json.Unmarshal(data, &searchResponseData)
-	if err != nil {
-		fmt.Errorf("Error to Unmarshal QueryResponse %s", err.Error())
-		return err
-	}
-	return nil
 }
 
 func (c *Client) performRequest(ctx context.Context, opt *performRequestOptions) (*http.Response, error) {
