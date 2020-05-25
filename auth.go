@@ -37,7 +37,7 @@ func (c *Client) Connect(database string) (*ResponseData, error) {
 
 func (c *Client) ConnectWithDatasource(database string) (*ResponseData, error) {
 	c.mu.RLock()
-	path := fmt.Sprintf(sessionAuthPath, c.url, c.version, database)
+	path := fmt.Sprintf(sessionAuthPath, c.version, database)
 	datasource := FmDatasource{
 		Database: database,
 		Username: c.username,

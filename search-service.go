@@ -20,7 +20,7 @@ type searchService struct {
 
 func NewSearchService(database, layout string, client *Client) *searchService {
 	searchData := new(searchData)
-	searchData.Query = make([]map[string]string, 0)
+	searchData.QueryGroup = make([]map[string]string, 0)
 	return &searchService{
 		client:    client,
 		database:  database,
@@ -30,21 +30,23 @@ func NewSearchService(database, layout string, client *Client) *searchService {
 }
 
 type searchData struct {
-	Query  []map[string]string `json:"query"`
-	Limit  string              `json:"limit,omitempty"`
-	Offset string              `json:"offset,omitempty"`
-	Sort   []*Sorter           `json:"sort,omitempty"`
+	QueryGroup []map[string]string `json:"query"`
+	Limit      string              `json:"limit,omitempty"`
+	Offset     string              `json:"offset,omitempty"`
+	Sort       []*Sorter           `json:"sort,omitempty"`
 }
 
-func (s *searchService) Queries(queryFields ...*queryFieldOperator) *searchService {
+func (s *searchService) GroupQuery(queryGroups ...*queryGroup) *searchService {
 	queries := make([]map[string]string, 0)
-	for _, queryField := range queryFields {
+	for _, queryGroup := range queryGroups {
 		queryMap := make(map[string]string)
-		value := queryField.valueWithOp()
-		queryMap[queryField.Name] = value
+		for _, query := range queryGroup.queries {
+			value := query.valueWithOp()
+			queryMap[query.Name] = value
+		}
 		queries = append(queries, queryMap)
 	}
-	s.seachData.Query = queries
+	s.seachData.QueryGroup = queries
 	return s
 }
 
