@@ -20,7 +20,7 @@ import "github.com/pzentenoe/filemaker"
 ## Getting Started
 
 The first thing you do is to create a [Client](https://github.com/pzentenoe/filemaker/blob/master/client.go).
-The client connects to FileMaker Server passing a host.
+The client connects to FileMaker Server 18.1 passing a host.
 
 
 ```go
@@ -59,16 +59,15 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
-
 		fmt.Println(data)
 	
-
 	searchService := filemaker.NewSearchService("DatabaseName", "LayoutName", client)
 	data, err = searchService.
-		Queries(filemaker.NewQueryFieldOperator("FieldName", "LUIS ALBERTO", filemaker.Equal)).
-		SetOffset("1").SetLimit("10").
-		//Sorters(filemaker.NewSorter("Sol_Nombres", filemaker.Descending)).
-		Do()
+		GroupQuery(filemaker.NewQueryGroup(
+                   				filemaker.NewQueryFieldOperator("name", "pablo", filemaker.Equal),
+                   				filemaker.NewQueryFieldOperator("last_name", "zenteno", filemaker.Equal),
+                   			),
+        ).Sorters(filemaker.NewSorter("last_name", filemaker.Descending)).Do()
 	if err != nil {
 		fmt.Println(err)
 	}
