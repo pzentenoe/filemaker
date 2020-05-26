@@ -1,9 +1,9 @@
 package filemaker
 
-type queryGroup struct {
+type groupQuery struct {
 	queries []*queryFieldOperator
 }
 
-func NewQueryGroup(queries ...*queryFieldOperator) *queryGroup {
-	return &queryGroup{queries: queries}
+func NewGroupQuery(queries ...*queryFieldOperator) *groupQuery {
+	return &groupQuery{queries: queries}
 }

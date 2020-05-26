@@ -8,8 +8,8 @@ import (
 func Test_searchService_GroupQuery(t *testing.T) {
 	t.Run("Test query group", func(t *testing.T) {
 		search := NewSearchService("test", "test_layout", nil)
-		search.GroupQuery(
-			NewQueryGroup(
+		search.GroupQueries(
+			NewGroupQuery(
 				NewQueryFieldOperator("nombre", "pablo", Equal),
 				NewQueryFieldOperator("apellido", "zenteno", Equal),
 			),
@@ -22,8 +22,8 @@ func Test_searchService_GroupQuery(t *testing.T) {
 
 	t.Run("Test query group with 1 query", func(t *testing.T) {
 		search := NewSearchService("test", "test_layout", nil)
-		search.GroupQuery(
-			NewQueryGroup(
+		search.GroupQueries(
+			NewGroupQuery(
 				NewQueryFieldOperator("nombre", "pablo", Equal),
 			),
 		)

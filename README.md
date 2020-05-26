@@ -63,7 +63,7 @@ func main() {
 	
 	searchService := filemaker.NewSearchService("DatabaseName", "LayoutName", client)
 	data, err = searchService.
-		GroupQuery(filemaker.NewQueryGroup(
+		GroupQueries(filemaker.NewGroupQuery(
                    				filemaker.NewQueryFieldOperator("name", "pablo", filemaker.Equal),
                    				filemaker.NewQueryFieldOperator("last_name", "zenteno", filemaker.Equal),
                    			),

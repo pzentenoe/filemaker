@@ -36,7 +36,7 @@ type searchData struct {
 	Sort       []*Sorter           `json:"sort,omitempty"`
 }
 
-func (s *searchService) GroupQuery(queryGroups ...*queryGroup) *searchService {
+func (s *searchService) GroupQueries(queryGroups ...*groupQuery) *searchService {
 	queries := make([]map[string]string, 0)
 	for _, queryGroup := range queryGroups {
 		queryMap := make(map[string]string)
