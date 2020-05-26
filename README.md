@@ -1,8 +1,8 @@
-# Filemaker
+# FileMaker
 
-**This is a library created in go to connect to filemaker.**
+**This is a library created in go to connect to the FileMaker Data API.**
 
-[Filemaker API](https://fmhelp.filemaker.com/docs/18/es/dataapi/) documentation.
+[FileMaker API](https://fmhelp.filemaker.com/docs/18/es/dataapi/) documentation.
 
 **Example:**
 
@@ -20,7 +20,7 @@ import "github.com/pzentenoe/filemaker"
 ## Getting Started
 
 The first thing you do is to create a [Client](https://github.com/pzentenoe/filemaker/blob/master/client.go).
-The client connects to Filemaker passing a host.
+The client connects to FileMaker Server passing a host.
 
 
 ```go
