@@ -20,7 +20,7 @@ import "github.com/pzentenoe/filemaker"
 ## Getting Started
 
 The first thing you do is to create a [Client](https://github.com/pzentenoe/filemaker/blob/master/client.go).
-The client connects to FileMaker Server 18.1 passing a host.
+The client connects to FileMaker Server passing a host.
 
 
 ```go
