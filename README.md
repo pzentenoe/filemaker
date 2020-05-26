@@ -77,6 +77,9 @@ func main() {
 }
 ```
 
+#### Author
+* **[Pablo Zenteno](https://github.com/pzentenoe)** - *Full Stack developer*
+
 ## LICENSE
 
 MIT-LICENSE. See [LICENSE](http://olivere.mit-license.org/)
