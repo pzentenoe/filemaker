@@ -6,11 +6,6 @@
 
 **Example:**
 
-
-To use the required version of Filemaker in your application, you
-should use [Go modules](https://github.com/golang/go/wiki/Modules)
-to manage dependencies. Make sure to use a version such as `1.0.0` or later.
-
 To use Filemaker, import:
 
 ```go
