@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-type QueryService interface {
+type RecordService interface {
 	Create(payload *Payload) (*ResponseData, error)
 	Edit(recordId string, payload *Payload) (*ResponseData, error)
 	Duplicate(recordId string) (*ResponseData, error)

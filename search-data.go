@@ -11,6 +11,8 @@ type Message struct {
 }
 
 type Response struct {
+	RecordID string   `json:"recordId,omitempty"`
+	ModID    string   `json:"modId,omitempty"`
 	Token    string   `json:"token,omitempty"`
 	DataInfo DataInfo `json:"dataInfo,omitempty"`
 	Data     []Datum  `json:"data,omitempty"`
