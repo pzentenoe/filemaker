@@ -33,6 +33,7 @@ type searchData struct {
 	QueryGroup []map[string]string `json:"query"`
 	Limit      string              `json:"limit,omitempty"`
 	Offset     string              `json:"offset,omitempty"`
+	Portal     []string            `json:"portal,omitempty"`
 	Sort       []*Sorter           `json:"sort,omitempty"`
 }
 
@@ -59,6 +60,12 @@ func (s *searchService) SetLimit(limit string) *searchService {
 	s.seachData.Limit = limit
 	return s
 }
+
+func (s *searchService) SetPortals(portal []string) *searchService {
+	s.seachData.Portal = portal
+	return s
+}
+
 func (s *searchService) Sorters(sorters ...*Sorter) *searchService {
 	s.seachData.Sort = sorters
 	return s
