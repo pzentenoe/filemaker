@@ -33,7 +33,7 @@ type searchData struct {
 	QueryGroup []map[string]string `json:"query"`
 	Limit      string              `json:"limit,omitempty"`
 	Offset     string              `json:"offset,omitempty"`
-	Portal     []string            `json:"portal,omitempty"`
+	Portal     []string            `json:"portal"`
 	Sort       []*Sorter           `json:"sort,omitempty"`
 }
 
