@@ -5,10 +5,8 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -24,19 +22,43 @@ type performRequestOptions struct {
 	Method      string
 	Path        string
 	Params      url.Values
-	Body        interface{}
+	Body        any
 	ContentType string
 	Headers     http.Header
 	basicAuth   bool
 }
 
 type Client struct {
-	mu         sync.RWMutex
-	url        string //URL with port or dns
-	username   string
-	password   string
-	version    string //Default vLatest
-	httpClient *http.Client
+	mu          sync.RWMutex
+	url         string //URL with port or dns
+	username    string
+	password    string
+	version     string //Default vLatest
+	httpClient  *http.Client
+	retryConfig *RetryConfig
+	logger      Logger
+	metrics     *Metrics
+}
+
+// getVersion safely retrieves the client version with read lock.
+func (c *Client) getVersion() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.version
+}
+
+// getCredentials safely retrieves client credentials with read lock.
+func (c *Client) getCredentials() (version, username, password string) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.version, c.username, c.password
+}
+
+// getURL safely retrieves the client URL with read lock.
+func (c *Client) getURL() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.url
 }
 
 func NewClient(options ...ClientOptions) (*Client, error) {
@@ -52,59 +74,82 @@ func NewClient(options ...ClientOptions) (*Client, error) {
 	if c.httpClient == nil {
 		c.httpClient = http.DefaultClient
 	}
+	if c.retryConfig == nil {
+		// Use default retry configuration
+		c.retryConfig = DefaultRetryConfig()
+	}
+	if c.logger == nil {
+		// Use no-op logger by default
+		c.logger = &NoOpLogger{}
+	}
+	// Metrics are optional and remain nil unless explicitly enabled
 
 	return c, nil
 }
 
-func (c *Client) executeQuery(options *performRequestOptions) (*ResponseData, error) {
-	response, err := c.performRequest(context.Background(), options)
-
-	if response == nil && err != nil {
-		fmt.Errorf("Fail performRequest %s", err.Error())
-		return nil, err
-	}
-	var searchResponseData *ResponseData
-	if response != nil && err != nil {
-		defer response.Body.Close()
-
-		data, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			fmt.Errorf("Error to get response body : %s", err.Error())
-			return nil, err
-		}
-
-		err = json.Unmarshal(data, &searchResponseData)
-		if err != nil {
-			fmt.Errorf("Error to Unmarshal QueryResponse %s", err.Error())
-			return searchResponseData, err
-		}
-
-	}
-	if err == nil {
-		defer response.Body.Close()
-
-		data, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			fmt.Errorf("Error to get response body : %s", err.Error())
-			return nil, err
-		}
-		err = json.Unmarshal(data, &searchResponseData)
-		if err != nil {
-			fmt.Errorf("Error to Unmarshal QueryResponse %s", err.Error())
-			return searchResponseData, err
-		}
+func (c *Client) executeQuery(ctx context.Context, options *performRequestOptions) (*ResponseData, error) {
+	if ctx == nil {
+		ctx = context.Background()
 	}
 
-	return searchResponseData, nil
+	var responseData *ResponseData
+
+	err := c.retryConfig.executeWithRetry(ctx, func() error {
+		response, err := c.performRequest(ctx, options)
+
+		if response == nil && err != nil {
+			return fmt.Errorf("failed to perform request: %w", err)
+		}
+
+		if response != nil {
+			defer response.Body.Close()
+
+			data, err := io.ReadAll(response.Body)
+			if err != nil {
+				return &NetworkError{
+					Message: "failed to read response body",
+					Err:     err,
+				}
+			}
+
+			err = json.Unmarshal(data, &responseData)
+			if err != nil {
+				return fmt.Errorf("failed to unmarshal response: %w", err)
+			}
+
+			if responseData != nil && len(responseData.Messages) > 0 {
+				if fmErr := ParseFileMakerError(responseData, response.StatusCode); fmErr != nil {
+					return fmErr
+				}
+			}
+
+			if response.StatusCode >= 400 {
+				return &FileMakerError{
+					HTTPStatus: response.StatusCode,
+					Message:    http.StatusText(response.StatusCode),
+				}
+			}
+		}
+
+		return nil
+	})
+
+	return responseData, err
 }
 
 func (c *Client) performRequest(ctx context.Context, opt *performRequestOptions) (*http.Response, error) {
 
 	if c.url == "" {
-		return nil, errors.New("Empty URL")
+		return nil, &ValidationError{
+			Field:   "url",
+			Message: "URL is required",
+		}
 	}
 	if opt.Method == "" {
-		return nil, errors.New("Empty Method")
+		return nil, &ValidationError{
+			Field:   "method",
+			Message: "HTTP method is required",
+		}
 	}
 
 	pathWithParams := opt.Path
@@ -115,6 +160,9 @@ func (c *Client) performRequest(ctx context.Context, opt *performRequestOptions)
 	completeUrl := fmt.Sprintf("%s/%s", c.url, pathWithParams)
 
 	req, err := c.NewRequest(opt.Method, completeUrl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
 	if opt.ContentType != "" {
 		req.Header.Set("Content-Type", opt.ContentType)
 	}
@@ -129,7 +177,7 @@ func (c *Client) performRequest(ctx context.Context, opt *performRequestOptions)
 	if opt.Body != nil {
 		err = req.setBody(opt.Body, false)
 		if err != nil {
-			return nil, fmt.Errorf("filemaker: couldn't set body %v for request: %v", opt.Body, err)
+			return nil, fmt.Errorf("failed to set request body: %w", err)
 		}
 	}
 
@@ -155,7 +203,7 @@ func (c *Client) NewRequest(method, url string) (*Request, error) {
 	return (*Request)(req), nil
 }
 
-func (r *Request) setBody(body interface{}, gzipCompress bool) error {
+func (r *Request) setBody(body any, gzipCompress bool) error {
 	switch b := body.(type) {
 	case string:
 		if gzipCompress {
@@ -170,7 +218,7 @@ func (r *Request) setBody(body interface{}, gzipCompress bool) error {
 	}
 }
 
-func (r *Request) setBodyJson(data interface{}) error {
+func (r *Request) setBodyJson(data any) error {
 	body, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -180,7 +228,7 @@ func (r *Request) setBodyJson(data interface{}) error {
 	return nil
 }
 
-func (r *Request) setBodyGzip(body interface{}) error {
+func (r *Request) setBodyGzip(body any) error {
 	switch b := body.(type) {
 	case string:
 		buf := new(bytes.Buffer)
@@ -221,7 +269,7 @@ func (r *Request) setBodyString(body string) error {
 func (r *Request) setBodyReader(body io.Reader) error {
 	rc, ok := body.(io.ReadCloser)
 	if !ok && body != nil {
-		rc = ioutil.NopCloser(body)
+		rc = io.NopCloser(body)
 	}
 	r.Body = rc
 	if body != nil {

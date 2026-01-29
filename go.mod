@@ -1,3 +1,3 @@
 module github.com/pzentenoe/filemaker
 
-go 1.14
+go 1.25
