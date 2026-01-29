@@ -14,7 +14,7 @@ func Test_searchService_GroupQuery(t *testing.T) {
 				NewQueryFieldOperator("apellido", "zenteno", Equal),
 			),
 		)
-		b, _ := json.Marshal(search.seachData.QueryGroup)
+		b, _ := json.Marshal(search.searchData.QueryGroup)
 		if string(b) != "[{\"apellido\":\"==zenteno\",\"nombre\":\"==pablo\"}]" {
 			t.Errorf("JSON was incorrect, got: %s, want: %s", string(b), "[{\"apellido\":\"==zenteno\",\"nombre\":\"==pablo\"}]")
 		}
@@ -27,7 +27,7 @@ func Test_searchService_GroupQuery(t *testing.T) {
 				NewQueryFieldOperator("nombre", "pablo", Equal),
 			),
 		)
-		b, _ := json.Marshal(search.seachData.QueryGroup)
+		b, _ := json.Marshal(search.searchData.QueryGroup)
 
 		if string(b) != "[{\"nombre\":\"==pablo\"}]" {
 			t.Errorf("JSON was incorrect, got: %s, want: %s", string(b), "[{\"nombre\":\"==pablo\"}]")
