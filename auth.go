@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	sessionAuthPath string = "fmi/data/%s/databases/%s/sessions"
-	contentTypeJSON        = "application/json"
+	sessionAuthPath = "fmi/data/%s/databases/%s/sessions"
+	contentTypeJSON = "application/json"
 )
 
 // AuthProvider defines the strategy for authentication.

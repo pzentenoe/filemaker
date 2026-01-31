@@ -30,7 +30,9 @@ func main() {
 		log.Fatal(err)
 	}
 	token := session.Response.Token
-	defer client.Disconnect(db, token)
+	defer func(client *filemaker.Client, database, token string) {
+		_, _ = client.Disconnect(database, token)
+	}(client, db, token)
 
 	// 2. Build Global Fields Map
 	// Ensure these fields are actually global fields in your solution
