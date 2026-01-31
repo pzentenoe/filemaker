@@ -1,10 +1,11 @@
 # FileMaker Go Library
 
-[![codecov](https://codecov.io/github/pzentenoe/filemaker/graph/badge.svg?token=3W164MZ18S)](https://codecov.io/github/pzentenoe/filemaker)
 ![CI](https://github.com/pzentenoe/filemaker/actions/workflows/actions.yml/badge.svg)
+[![codecov](https://codecov.io/github/pzentenoe/filemaker/graph/badge.svg?token=3W164MZ18S)](https://codecov.io/github/pzentenoe/filemaker)
 [![Go Report Card](https://goreportcard.com/badge/github.com/pzentenoe/filemaker)](https://goreportcard.com/report/github.com/pzentenoe/filemaker)
-![License](https://img.shields.io/github/license/pzentenoe/filemaker.svg)
-![GitHub release](https://img.shields.io/github/v/release/pzentenoe/filemaker.svg)
+![License](https://img.shields.io/github/license/pzentenoe/filemaker)
+![GitHub release](https://img.shields.io/github/v/release/pzentenoe/filemaker)
+
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B60042%2Fgit%40github.com%3Apzentenoe%2Ffilemaker.git.svg?type=shield&issueType=license)](https://app.fossa.com/projects/custom%2B60042%2Fgit%40github.com%3Apzentenoe%2Ffilemaker.git?ref=badge_shield&issueType=license)
 [![FOSSA Status](https://app.fossa.com/api/projects/custom%2B60042%2Fgit%40github.com%3Apzentenoe%2Ffilemaker.git.svg?type=shield&issueType=security)](https://app.fossa.com/projects/custom%2B60042%2Fgit%40github.com%3Apzentenoe%2Ffilemaker.git?ref=badge_shield&issueType=security)
 
@@ -136,6 +137,10 @@ Check out the `examples/` directory for complete, runnable code snippets coverin
 ## Contributing
 
 Contributions are welcome! If you find a bug or want to request a feature, please open an issue or submit a pull request.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a history of changes to this project.
 
 ## License
 
