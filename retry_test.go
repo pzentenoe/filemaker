@@ -335,7 +335,7 @@ func TestRetryConfig_executeWithRetry_OnRetryCallback(t *testing.T) {
 	ctx := context.Background()
 	expectedErr := &NetworkError{Message: "test"}
 
-	config.executeWithRetry(ctx, func() error {
+	_ = config.executeWithRetry(ctx, func() error {
 		return expectedErr
 	})
 
@@ -403,7 +403,7 @@ func BenchmarkRetryConfig_executeWithRetry_Success(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		config.executeWithRetry(ctx, func() error {
+		_ = config.executeWithRetry(ctx, func() error {
 			return nil
 		})
 	}
