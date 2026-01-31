@@ -457,3 +457,32 @@ func TestContainerFileInfo_WithRepetition_Chaining(t *testing.T) {
 		t.Errorf("expected Repetition 5, got %d", info.Repetition)
 	}
 }
+
+func TestContainerService_Download(t *testing.T) {
+	content := "file content"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer test-token" {
+			t.Errorf("expected Bearer test-token, got %s", r.Header.Get("Authorization"))
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(content))
+	}))
+	defer server.Close()
+
+	client, _ := NewClient(SetURL(server.URL))
+	service := NewContainerService(client)
+
+	reader, err := service.Download(context.Background(), server.URL, "test-token")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer reader.Close()
+
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatalf("failed to read data: %v", err)
+	}
+	if string(data) != content {
+		t.Errorf("expected %s, got %s", content, string(data))
+	}
+}

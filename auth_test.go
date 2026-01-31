@@ -9,6 +9,16 @@ import (
 	"time"
 )
 
+// Internal structs for testing to match the unexported ones in auth.go
+type testConnectionDatasource struct {
+	FmDataSource []testFmDatasource `json:"fmDataSource"`
+}
+type testFmDatasource struct {
+	Database string `json:"database"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func TestConnect(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -59,11 +69,10 @@ func TestConnect(t *testing.T) {
 
 			client, _ := NewClient(
 				SetURL(server.URL),
-				SetUsername("testuser"),
-				SetPassword("testpass"),
+				SetBasicAuth("testuser", "testpass"),
 			)
 
-			resp, err := client.Connect(tt.database)
+			resp, err := client.CreateSession(context.Background(), tt.database)
 
 			if tt.wantErr {
 				if err == nil {
@@ -96,21 +105,20 @@ func TestConnectWithContext(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("testuser"),
-		SetPassword("testpass"),
+		SetBasicAuth("testuser", "testpass"),
 		DisableRetry(),
 	)
 
 	t.Run("with background context", func(t *testing.T) {
 		ctx := context.Background()
-		_, err := client.ConnectWithContext(ctx, "TestDB")
+		_, err := client.CreateSession(ctx, "TestDB")
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
 
 	t.Run("with nil context", func(t *testing.T) {
-		_, err := client.ConnectWithContext(context.TODO(), "TestDB")
+		_, err := client.CreateSession(nil, "TestDB")
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -119,7 +127,7 @@ func TestConnectWithContext(t *testing.T) {
 	t.Run("with canceled context", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
-		_, err := client.ConnectWithContext(ctx, "TestDB")
+		_, err := client.CreateSession(ctx, "TestDB")
 		if err == nil {
 			t.Error("expected error with canceled context")
 		}
@@ -128,11 +136,22 @@ func TestConnectWithContext(t *testing.T) {
 
 func TestConnectWithDatasource(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var payload ConnectionDatasource
+		// Check Basic Auth (Master credentials)
+		username, password, ok := r.BasicAuth()
+		if !ok || username != "masterUser" || password != "masterPass" {
+			t.Errorf("expected master credentials in Basic Auth, got %s:%s", username, password)
+		}
+
+		// Check JSON Body (External credentials)
+		var payload testConnectionDatasource
 		_ = json.NewDecoder(r.Body).Decode(&payload)
 
 		if len(payload.FmDataSource) != 1 {
 			t.Errorf("expected 1 datasource, got %d", len(payload.FmDataSource))
+		}
+		ds := payload.FmDataSource[0]
+		if ds.Username != "externalUser" || ds.Password != "externalPass" {
+			t.Errorf("expected external credentials in body, got %s:%s", ds.Username, ds.Password)
 		}
 
 		resp := ResponseData{
@@ -146,11 +165,10 @@ func TestConnectWithDatasource(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("testuser"),
-		SetPassword("testpass"),
+		SetBasicAuth("masterUser", "masterPass"),
 	)
 
-	resp, err := client.ConnectWithDatasource("TestDB")
+	resp, err := client.CreateSession(context.Background(), "TestDB", WithCustomDatasource("externalUser", "externalPass"))
 
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
@@ -303,4 +321,40 @@ func TestValidateSessionWithContext(t *testing.T) {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
+}
+
+func TestConnectWithOAuth(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestId := r.Header.Get("X-FM-Data-OAuth-Request-Id")
+		identifier := r.Header.Get("X-FM-Data-OAuth-Identifier")
+
+		if requestId != "req-id-123" {
+			t.Errorf("expected request id req-id-123, got %s", requestId)
+		}
+		if identifier != "ident-456" {
+			t.Errorf("expected identifier ident-456, got %s", identifier)
+		}
+
+		if r.Header.Get("Authorization") != "" {
+			t.Error("expected no Authorization header")
+		}
+
+		resp := ResponseData{
+			Response: Response{Token: "oauth-token"},
+			Messages: []Message{{Code: "0", Message: "OK"}},
+		}
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client, _ := NewClient(SetURL(server.URL))
+	resp, err := client.CreateSession(context.Background(), "TestDB", WithOAuth("req-id-123", "ident-456"))
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if resp.Response.Token != "oauth-token" {
+		t.Errorf("expected token oauth-token, got %s", resp.Response.Token)
+	}
 }

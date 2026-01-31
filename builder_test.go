@@ -174,10 +174,10 @@ func TestRecordBuilder_WithDeleteRelated(t *testing.T) {
 	client, _ := NewClient()
 	builder := NewRecordBuilder(client, "TestDB", "TestLayout")
 
-	builder.WithDeleteRelated(true)
+	builder.WithDeleteRelated("MyPortal")
 
-	if !builder.deleteRelated {
-		t.Error("expected deleteRelated to be true")
+	if builder.deleteRelated != "MyPortal" {
+		t.Error("expected deleteRelated to be MyPortal")
 	}
 }
 
@@ -207,8 +207,7 @@ func TestRecordBuilder_Create(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	builder := NewRecordBuilder(client, "TestDB", "TestLayout")
 	builder.SetField("Name", "Test")
@@ -248,8 +247,7 @@ func TestRecordBuilder_Update(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	builder := NewRecordBuilder(client, "TestDB", "TestLayout")
 	builder.ForRecord("123").SetField("Name", "Updated")
@@ -295,18 +293,89 @@ func TestRecordBuilder_Delete(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	builder := NewRecordBuilder(client, "TestDB", "TestLayout")
 	builder.ForRecord("123")
-
 	resp, err := builder.Delete(context.Background())
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 	if resp == nil {
 		t.Fatal("response is nil")
+	}
+}
+
+func TestRecordBuilder_Update_WithModID(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			_ = json.NewEncoder(w).Encode(ResponseData{
+				Response: Response{Token: "test-token"},
+				Messages: []Message{{Code: "0", Message: "OK"}},
+			})
+			return
+		}
+		if callCount == 2 {
+			var payload Payload
+			err := json.NewDecoder(r.Body).Decode(&payload)
+			if err != nil {
+				t.Fatalf("failed to decode payload: %v", err)
+			}
+			if payload.ModId != "5" {
+				t.Errorf("expected modId 5, got %s", payload.ModId)
+			}
+
+			_ = json.NewEncoder(w).Encode(ResponseData{
+				Response: Response{ModID: "6"},
+				Messages: []Message{{Code: "0", Message: "OK"}},
+			})
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client, _ := NewClient(SetURL(server.URL), SetBasicAuth("u", "p"))
+	builder := NewRecordBuilder(client, "DB", "Layout")
+	builder.ForRecord("123").WithModID("5").SetField("f", "v")
+
+	_, err := builder.Update(context.Background())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestRecordBuilder_Delete_WithDeleteRelated(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			_ = json.NewEncoder(w).Encode(ResponseData{
+				Response: Response{Token: "test-token"},
+				Messages: []Message{{Code: "0", Message: "OK"}},
+			})
+			return
+		}
+		if callCount == 2 {
+			if r.URL.Query().Get("deleteRelated") != "MyPortal" {
+				t.Errorf("expected deleteRelated=MyPortal, got %s", r.URL.Query().Get("deleteRelated"))
+			}
+		}
+		_ = json.NewEncoder(w).Encode(ResponseData{
+			Messages: []Message{{Code: "0", Message: "OK"}},
+		})
+	}))
+	defer server.Close()
+
+	client, _ := NewClient(SetURL(server.URL), SetBasicAuth("u", "p"))
+	builder := NewRecordBuilder(client, "DB", "Layout")
+	builder.ForRecord("123").WithDeleteRelated("MyPortal")
+
+	_, err := builder.Delete(context.Background())
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 
@@ -343,8 +412,7 @@ func TestRecordBuilder_Get(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	builder := NewRecordBuilder(client, "TestDB", "TestLayout")
 	builder.ForRecord("123")
@@ -388,8 +456,7 @@ func TestRecordBuilder_Duplicate(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	builder := NewRecordBuilder(client, "TestDB", "TestLayout")
 	builder.ForRecord("123")
@@ -517,8 +584,7 @@ func TestFindBuilder_Execute(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	builder := NewFindBuilder(client, "TestDB", "TestLayout")
 	builder.Where("Status", Equal, "Active").Limit(10)
@@ -555,8 +621,7 @@ func TestSessionBuilder_Connect(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	builder := NewSessionBuilder(client, "TestDB")
 
@@ -583,8 +648,7 @@ func TestSessionBuilder_ConnectWithDatasource(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	builder := NewSessionBuilder(client, "TestDB")
 

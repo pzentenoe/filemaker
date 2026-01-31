@@ -41,54 +41,28 @@ func TestSetURL(t *testing.T) {
 	}
 }
 
-func TestSetUsername(t *testing.T) {
+func TestSetBasicAuth(t *testing.T) {
 	tests := []struct {
 		name     string
 		username string
+		password string
 		wantErr  bool
 	}{
 		{
-			name:     "valid username",
+			name:     "valid credentials",
 			username: "admin",
+			password: "password123",
 			wantErr:  false,
 		},
 		{
 			name:     "empty username",
 			username: "",
-			wantErr:  true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			client := &Client{}
-			err := SetUsername(tt.username)(client)
-
-			if (err != nil) != tt.wantErr {
-				t.Errorf("SetUsername() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if !tt.wantErr && client.username != tt.username {
-				t.Errorf("client.username = %v, want %v", client.username, tt.username)
-			}
-		})
-	}
-}
-
-func TestSetPassword(t *testing.T) {
-	tests := []struct {
-		name     string
-		password string
-		wantErr  bool
-	}{
-		{
-			name:     "valid password",
 			password: "password123",
-			wantErr:  false,
+			wantErr:  true,
 		},
 		{
 			name:     "empty password",
+			username: "admin",
 			password: "",
 			wantErr:  true,
 		},
@@ -97,15 +71,50 @@ func TestSetPassword(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := &Client{}
-			err := SetPassword(tt.password)(client)
+			err := SetBasicAuth(tt.username, tt.password)(client)
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("SetPassword() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SetBasicAuth() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
-			if !tt.wantErr && client.password != tt.password {
-				t.Errorf("client.password = %v, want %v", client.password, tt.password)
+			if !tt.wantErr && client.authProvider == nil {
+				t.Error("client.authProvider should not be nil")
+			}
+		})
+	}
+}
+
+func TestSetAuthProvider(t *testing.T) {
+	tests := []struct {
+		name     string
+		provider AuthProvider
+		wantErr  bool
+	}{
+		{
+			name:     "valid provider",
+			provider: WithBasicAuth("user", "pass"),
+			wantErr:  false,
+		},
+		{
+			name:     "nil provider",
+			provider: nil,
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &Client{}
+			err := SetAuthProvider(tt.provider)(client)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SetAuthProvider() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !tt.wantErr && client.authProvider == nil {
+				t.Error("client.authProvider should not be nil")
 			}
 		})
 	}

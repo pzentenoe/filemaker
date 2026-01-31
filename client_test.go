@@ -33,16 +33,15 @@ func TestNewClient(t *testing.T) {
 			name: "client with custom options",
 			options: []ClientOptions{
 				SetURL("http://localhost"),
-				SetUsername("user"),
-				SetPassword("pass"),
+				SetBasicAuth("user", "pass"),
 				SetVersion("v2"),
 			},
 			check: func(t *testing.T, c *Client) {
 				if c.url != "http://localhost" {
 					t.Errorf("expected url http://localhost, got %s", c.url)
 				}
-				if c.username != "user" {
-					t.Errorf("expected username user, got %s", c.username)
+				if c.authProvider == nil {
+					t.Error("expected authProvider to be set")
 				}
 			},
 		},
@@ -80,25 +79,6 @@ func TestClient_getVersion(t *testing.T) {
 	version := client.getVersion()
 	if version != "v2" {
 		t.Errorf("expected version v2, got %s", version)
-	}
-}
-
-func TestClient_getCredentials(t *testing.T) {
-	client, _ := NewClient(
-		SetVersion("v2"),
-		SetUsername("testuser"),
-		SetPassword("testpass"),
-	)
-
-	version, username, password := client.getCredentials()
-	if version != "v2" {
-		t.Errorf("expected version v2, got %s", version)
-	}
-	if username != "testuser" {
-		t.Errorf("expected username testuser, got %s", username)
-	}
-	if password != "testpass" {
-		t.Errorf("expected password testpass, got %s", password)
 	}
 }
 
@@ -151,7 +131,9 @@ func TestClient_performRequest(t *testing.T) {
 			setupOpts: &performRequestOptions{
 				Method:    http.MethodGet,
 				Path:      "test/path",
-				basicAuth: true,
+				BasicAuth: true,
+				Username:  "testuser",
+				Password:  "testpass",
 			},
 			setupFunc: func() *httptest.Server {
 				return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -173,8 +155,7 @@ func TestClient_performRequest(t *testing.T) {
 
 			client, _ := NewClient(
 				SetURL(server.URL),
-				SetUsername("testuser"),
-				SetPassword("testpass"),
+				SetBasicAuth("testuser", "testpass"),
 			)
 
 			ctx := context.Background()

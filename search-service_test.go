@@ -173,11 +173,11 @@ func TestSearchService_Do(t *testing.T) {
 
 			client, _ := NewClient(
 				SetURL(server.URL),
-				SetUsername("user"),
-				SetPassword("pass"),
+				SetBasicAuth("user", "pass"),
 			)
 
 			service := NewSearchService("TestDB", "TestLayout", client)
+
 			if tt.setupFunc != nil {
 				tt.setupFunc(service)
 			}
@@ -233,8 +233,7 @@ func TestSearchService_Do_WithContext(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 
 	service := NewSearchService("TestDB", "TestLayout", client)

@@ -47,8 +47,7 @@ func TestMetadataService_GetDatabases(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	service := NewMetadataService(client)
 
@@ -77,8 +76,7 @@ func TestMetadataService_GetDatabases_WithContext(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	service := NewMetadataService(client)
 
@@ -367,8 +365,7 @@ func TestMetadataService_GetProductInfo(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	service := NewMetadataService(client)
 
@@ -394,8 +391,7 @@ func TestMetadataService_GetProductInfo_WithContext(t *testing.T) {
 
 	client, _ := NewClient(
 		SetURL(server.URL),
-		SetUsername("user"),
-		SetPassword("pass"),
+		SetBasicAuth("user", "pass"),
 	)
 	service := NewMetadataService(client)
 
