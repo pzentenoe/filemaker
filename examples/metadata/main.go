@@ -60,7 +60,9 @@ func main() {
 			log.Fatal(err)
 		}
 		token := session.Response.Token
-		defer client.Disconnect(dbName, token)
+		defer func(client *filemaker.Client, database, token string) {
+			_, _ = client.Disconnect(database, token)
+		}(client, dbName, token)
 
 		layouts, err := service.GetLayouts(ctx, dbName, token)
 		if err != nil {

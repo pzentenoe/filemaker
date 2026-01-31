@@ -465,7 +465,7 @@ func TestContainerService_Download(t *testing.T) {
 			t.Errorf("expected Bearer test-token, got %s", r.Header.Get("Authorization"))
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(content))
+		_, _ = w.Write([]byte(content))
 	}))
 	defer server.Close()
 
@@ -476,7 +476,9 @@ func TestContainerService_Download(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	defer reader.Close()
+	defer func(reader io.ReadCloser) {
+		_ = reader.Close()
+	}(reader)
 
 	data, err := io.ReadAll(reader)
 	if err != nil {

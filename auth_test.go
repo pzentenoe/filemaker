@@ -118,7 +118,7 @@ func TestConnectWithContext(t *testing.T) {
 	})
 
 	t.Run("with nil context", func(t *testing.T) {
-		_, err := client.CreateSession(nil, "TestDB")
+		_, err := client.CreateSession(context.TODO(), "TestDB")
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}

@@ -37,7 +37,9 @@ func main() {
 		log.Fatal(err)
 	}
 	token := session.Response.Token
-	defer client.Disconnect(db, token)
+	defer func(client *filemaker.Client, database, token string) {
+		_, _ = client.Disconnect(database, token)
+	}(client, db, token)
 
 	scriptService := filemaker.NewScriptService(client)
 	resp, err := scriptService.Execute(ctx, db, layout, scriptName, "some-param", token)
