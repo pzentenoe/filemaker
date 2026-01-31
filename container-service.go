@@ -33,6 +33,10 @@ type ContainerService interface {
 
 	// UploadDataWithRepetition uploads binary data to a specific repetition of a container field.
 	UploadDataWithRepetition(ctx context.Context, database, layout, recordID, fieldName, filename string, data []byte, token string, repetition int) (*ResponseData, error)
+
+	// Download downloads the content of a container field from the provided URL.
+	// Returns a ReadCloser that the caller must close.
+	Download(ctx context.Context, url string, token string) (io.ReadCloser, error)
 }
 
 type containerService struct {
@@ -44,6 +48,63 @@ func NewContainerService(client *Client) ContainerService {
 	return &containerService{
 		client: client,
 	}
+}
+
+// Download downloads the content of a container field from the provided URL.
+// The URL is typically obtained from a container field in a record.
+//
+// Parameters:
+//   - ctx: Context for cancellation and timeout
+//   - url: The URL of the container data
+//   - token: Optional session token (required for secure container data)
+//
+// Returns an io.ReadCloser containing the file data. The caller is responsible for closing it.
+func (c *containerService) Download(ctx context.Context, url string, token string) (io.ReadCloser, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	if url == "" {
+		return nil, &ValidationError{
+			Field:   "url",
+			Message: "url is required",
+		}
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add Authorization header if token is provided
+	// For FileMaker Data API, secure container data often requires the session token
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	version := c.client.getVersion()
+	req.Header.Set("User-Agent", fmt.Sprintf("filemaker/%s", version))
+
+	// Execute the request
+	// We don't use retryConfig.executeWithRetry here because we want to return the body stream directly
+	// and retry logic usually involves reading/closing the body to check for errors, which conflicts with streaming.
+	resp, err := c.client.httpClient.Do(req)
+	if err != nil {
+		return nil, &NetworkError{
+			Message: "failed to download file",
+			Err:     err,
+		}
+	}
+
+	if resp.StatusCode >= 400 {
+		defer func() { _ = resp.Body.Close() }()
+		return nil, &FileMakerError{
+			HTTPStatus: resp.StatusCode,
+			Message:    http.StatusText(resp.StatusCode),
+		}
+	}
+
+	return resp.Body, nil
 }
 
 // UploadFile uploads a file from the local filesystem to a container field.

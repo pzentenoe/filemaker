@@ -55,6 +55,8 @@ func (m *metadataService) GetDatabases(ctx context.Context) (*ResponseData, erro
 
 	m.client.mu.RLock()
 	version := m.client.version
+	username := m.client.username
+	password := m.client.password
 	m.client.mu.RUnlock()
 
 	path := fmt.Sprintf(databasesPath, version)
@@ -62,7 +64,9 @@ func (m *metadataService) GetDatabases(ctx context.Context) (*ResponseData, erro
 	options := &performRequestOptions{
 		Method:    http.MethodGet,
 		Path:      path,
-		basicAuth: true,
+		BasicAuth: true,
+		Username:  username,
+		Password:  password,
 	}
 
 	return m.client.executeQuery(ctx, options)
@@ -203,6 +207,8 @@ func (m *metadataService) GetProductInfo(ctx context.Context) (*ResponseData, er
 
 	m.client.mu.RLock()
 	version := m.client.version
+	username := m.client.username
+	password := m.client.password
 	m.client.mu.RUnlock()
 
 	path := fmt.Sprintf(productInfoPath, version)
@@ -210,7 +216,9 @@ func (m *metadataService) GetProductInfo(ctx context.Context) (*ResponseData, er
 	options := &performRequestOptions{
 		Method:    http.MethodGet,
 		Path:      path,
-		basicAuth: true,
+		BasicAuth: true,
+		Username:  username,
+		Password:  password,
 	}
 
 	return m.client.executeQuery(ctx, options)

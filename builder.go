@@ -6,7 +6,6 @@ import (
 )
 
 // RecordBuilder provides a fluent interface for building and executing record operations.
-// It simplifies the creation of complex record operations with field data, portal data, and scripts.
 type RecordBuilder struct {
 	client        *Client
 	database      string
@@ -17,7 +16,9 @@ type RecordBuilder struct {
 	scripts       *ScriptContext
 	ctx           context.Context
 	modID         string
-	deleteRelated bool
+	deleteRelated string
+	limit         string
+	offset        string
 }
 
 // NewRecordBuilder creates a new RecordBuilder for the specified database and layout.
@@ -43,6 +44,18 @@ func NewRecordBuilder(client *Client, database, layout string) *RecordBuilder {
 // WithContext sets the context for the operation.
 func (rb *RecordBuilder) WithContext(ctx context.Context) *RecordBuilder {
 	rb.ctx = ctx
+	return rb
+}
+
+// Limit sets the maximum number of records to return for List operations.
+func (rb *RecordBuilder) Limit(limit int) *RecordBuilder {
+	rb.limit = strconv.Itoa(limit)
+	return rb
+}
+
+// Offset sets the starting record for List operations.
+func (rb *RecordBuilder) Offset(offset int) *RecordBuilder {
+	rb.offset = strconv.Itoa(offset)
 	return rb
 }
 
@@ -113,8 +126,8 @@ func (rb *RecordBuilder) WithModID(modID string) *RecordBuilder {
 	return rb
 }
 
-// WithDeleteRelated sets whether to delete related records.
-func (rb *RecordBuilder) WithDeleteRelated(deleteRelated bool) *RecordBuilder {
+// WithDeleteRelated sets whether to delete related records (portal name).
+func (rb *RecordBuilder) WithDeleteRelated(deleteRelated string) *RecordBuilder {
 	rb.deleteRelated = deleteRelated
 	return rb
 }
@@ -140,7 +153,6 @@ func (rb *RecordBuilder) Create(ctx context.Context) (*ResponseData, error) {
 
 // Update updates the record with the configured field data.
 // Requires ForRecord() to be called first.
-// Note: ModID for optimistic locking is currently not supported in this builder.
 func (rb *RecordBuilder) Update(ctx context.Context) (*ResponseData, error) {
 	if ctx == nil {
 		ctx = rb.ctx
@@ -157,6 +169,7 @@ func (rb *RecordBuilder) Update(ctx context.Context) (*ResponseData, error) {
 
 	payload := &Payload{
 		FieldData: rb.fieldData,
+		ModId:     rb.modID,
 	}
 
 	if len(rb.portalData) > 0 {
@@ -181,7 +194,7 @@ func (rb *RecordBuilder) Delete(ctx context.Context) (*ResponseData, error) {
 	}
 
 	service := NewRecordService(rb.database, rb.layout, rb.client)
-	return service.Delete(ctx, rb.recordID)
+	return service.Delete(ctx, rb.recordID, rb.deleteRelated)
 }
 
 // Get retrieves the record by ID.
@@ -218,6 +231,19 @@ func (rb *RecordBuilder) Duplicate(ctx context.Context) (*ResponseData, error) {
 
 	service := NewRecordService(rb.database, rb.layout, rb.client)
 	return service.Duplicate(ctx, rb.recordID)
+}
+
+// List retrieves a list of records.
+// Use Limit() and Offset() to handle pagination.
+func (rb *RecordBuilder) List(ctx context.Context) (*ResponseData, error) {
+	if ctx == nil {
+		ctx = rb.ctx
+	}
+
+	service := NewRecordService(rb.database, rb.layout, rb.client)
+	// Note: Sorters are not yet supported in RecordBuilder.List, only in FindBuilder or direct Service calls.
+	// You can add Sorter support to RecordBuilder if needed.
+	return service.List(ctx, rb.offset, rb.limit)
 }
 
 // FindBuilder provides a fluent interface for building complex find operations.
@@ -335,6 +361,8 @@ type SessionBuilder struct {
 	client   *Client
 	database string
 	token    string
+	username string
+	password string
 	ctx      context.Context
 }
 
@@ -353,32 +381,37 @@ func (sb *SessionBuilder) WithContext(ctx context.Context) *SessionBuilder {
 	return sb
 }
 
+// WithCredentials sets the username and password for the session.
+func (sb *SessionBuilder) WithCredentials(username, password string) *SessionBuilder {
+	sb.username = username
+	sb.password = password
+	return sb
+}
+
 // Connect establishes a new session and returns the session token.
 func (sb *SessionBuilder) Connect(ctx context.Context) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = sb.ctx
+	if sb.username != "" {
+		return sb.CreateSession(ctx, WithBasicAuth(sb.username, sb.password))
 	}
-
-	response, err := sb.client.ConnectWithContext(ctx, sb.database)
-	if err != nil {
-		return nil, err
-	}
-
-	// Store the token for later operations
-	if response != nil && response.Response.Token != "" {
-		sb.token = response.Response.Token
-	}
-
-	return response, nil
+	return sb.CreateSession(ctx, sb.client.authProvider)
 }
 
 // ConnectWithDatasource establishes a session using external data source authentication.
 func (sb *SessionBuilder) ConnectWithDatasource(ctx context.Context) (*ResponseData, error) {
+	if sb.username != "" {
+		return sb.CreateSession(ctx, WithCustomDatasource(sb.username, sb.password))
+	}
+	// Fallback to client default, assuming it is a datasource provider
+	return sb.CreateSession(ctx, sb.client.authProvider)
+}
+
+// CreateSession establishes a new session using the provided authentication strategy.
+func (sb *SessionBuilder) CreateSession(ctx context.Context, auth AuthProvider) (*ResponseData, error) {
 	if ctx == nil {
 		ctx = sb.ctx
 	}
 
-	response, err := sb.client.ConnectWithDatasourceContext(ctx, sb.database)
+	response, err := sb.client.CreateSession(ctx, sb.database, auth)
 	if err != nil {
 		return nil, err
 	}

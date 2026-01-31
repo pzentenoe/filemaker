@@ -13,12 +13,14 @@ type RecordService interface {
 	Create(ctx context.Context, payload *Payload) (*ResponseData, error)
 	Edit(ctx context.Context, recordId string, payload *Payload) (*ResponseData, error)
 	Duplicate(ctx context.Context, recordId string) (*ResponseData, error)
-	Delete(ctx context.Context, recordId string) (*ResponseData, error)
+	Delete(ctx context.Context, recordId string, deleteRelated string) (*ResponseData, error)
 	GetById(ctx context.Context, recordId string) (*ResponseData, error)
 	List(ctx context.Context, offset, limit string, sorters ...*Sorter) (*ResponseData, error)
 }
 
-const recordsPath = "fmi/data/%s/databases/%s/layouts/%s/records"
+const (
+	recordsPath = "fmi/data/%s/databases/%s/layouts/%s/records"
+)
 
 type recordService struct {
 	database string
@@ -37,8 +39,9 @@ func NewRecordService(database, layout string, client *Client) *recordService {
 
 // Payload represents the data structure for creating or editing records.
 type Payload struct {
-	FieldData  any `json:"fieldData"`
-	PortalData any `json:"portalData,omitempty"`
+	FieldData  any    `json:"fieldData"`
+	PortalData any    `json:"portalData,omitempty"`
+	ModId      string `json:"modId,omitempty"`
 }
 
 // withAuth wraps a function with authentication session management.
@@ -48,7 +51,7 @@ func (s *recordService) withAuth(ctx context.Context, fn func(context.Context, s
 		ctx = context.Background()
 	}
 
-	auth, err := s.client.ConnectWithContext(ctx, s.database)
+	auth, err := s.client.CreateSession(ctx, s.database)
 	if err != nil {
 		return nil, err
 	}
@@ -110,12 +113,19 @@ func (s *recordService) Duplicate(ctx context.Context, recordId string) (*Respon
 }
 
 // Delete removes a record from the FileMaker database.
-func (s *recordService) Delete(ctx context.Context, recordId string) (*ResponseData, error) {
+func (s *recordService) Delete(ctx context.Context, recordId string, deleteRelated string) (*ResponseData, error) {
 	return s.withAuth(ctx, func(ctx context.Context, token string) (*ResponseData, error) {
 		path := fmt.Sprintf(recordsPath+"/%s", s.client.getVersion(), s.database, s.layout, recordId)
+
+		params := url.Values{}
+		if deleteRelated != "" {
+			params.Add("deleteRelated", deleteRelated)
+		}
+
 		options := &performRequestOptions{
 			Method: http.MethodDelete,
 			Path:   path,
+			Params: params,
 			Headers: http.Header{
 				"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
 			},

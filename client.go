@@ -25,19 +25,22 @@ type performRequestOptions struct {
 	Body        any
 	ContentType string
 	Headers     http.Header
-	basicAuth   bool
+	Username    string
+	Password    string
+	BasicAuth   bool
 }
 
 type Client struct {
-	mu          sync.RWMutex
-	url         string //URL with port or dns
-	username    string
-	password    string
-	version     string //Default vLatest
-	httpClient  *http.Client
-	retryConfig *RetryConfig
-	logger      Logger
-	metrics     *Metrics
+	mu           sync.RWMutex
+	url          string //URL with port or dns
+	version      string //Default vLatest
+	httpClient   *http.Client
+	retryConfig  *RetryConfig
+	logger       Logger
+	metrics      *Metrics
+	authProvider AuthProvider
+	username     string
+	password     string
 }
 
 // getVersion safely retrieves the client version with read lock.
@@ -45,13 +48,6 @@ func (c *Client) getVersion() string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.version
-}
-
-// getCredentials safely retrieves client credentials with read lock.
-func (c *Client) getCredentials() (version, username, password string) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return c.version, c.username, c.password
 }
 
 // getURL safely retrieves the client URL with read lock.
@@ -104,37 +100,46 @@ func (c *Client) executeQuery(ctx context.Context, options *performRequestOption
 		if response != nil {
 			defer func() { _ = response.Body.Close() }()
 
-			data, err := io.ReadAll(response.Body)
-			if err != nil {
-				return &NetworkError{
-					Message: "failed to read response body",
-					Err:     err,
-				}
-			}
-
-			err = json.Unmarshal(data, &responseData)
-			if err != nil {
-				return fmt.Errorf("failed to unmarshal response: %w", err)
-			}
-
-			if responseData != nil && len(responseData.Messages) > 0 {
-				if fmErr := ParseFileMakerError(responseData, response.StatusCode); fmErr != nil {
-					return fmErr
-				}
-			}
-
-			if response.StatusCode >= 400 {
-				return &FileMakerError{
-					HTTPStatus: response.StatusCode,
-					Message:    http.StatusText(response.StatusCode),
-				}
-			}
+			var parseErr error
+			responseData, parseErr = c.parseResponse(response)
+			return parseErr
 		}
 
 		return nil
 	})
 
 	return responseData, err
+}
+
+func (c *Client) parseResponse(response *http.Response) (*ResponseData, error) {
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, &NetworkError{
+			Message: "failed to read response body",
+			Err:     err,
+		}
+	}
+
+	var responseData ResponseData
+	err = json.Unmarshal(data, &responseData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	if len(responseData.Messages) > 0 {
+		if fmErr := ParseFileMakerError(&responseData, response.StatusCode); fmErr != nil {
+			return &responseData, fmErr
+		}
+	}
+
+	if response.StatusCode >= 400 {
+		return &responseData, &FileMakerError{
+			HTTPStatus: response.StatusCode,
+			Message:    http.StatusText(response.StatusCode),
+		}
+	}
+
+	return &responseData, nil
 }
 
 func (c *Client) performRequest(ctx context.Context, opt *performRequestOptions) (*http.Response, error) {
@@ -181,8 +186,8 @@ func (c *Client) performRequest(ctx context.Context, opt *performRequestOptions)
 		}
 	}
 
-	if opt.basicAuth {
-		req.setBasicAuth(c.username, c.password)
+	if opt.BasicAuth {
+		req.setBasicAuth(opt.Username, opt.Password)
 	}
 
 	resp, err := c.Do((*http.Request)(req).WithContext(ctx))

@@ -22,32 +22,36 @@ func SetURL(url string) ClientOptions {
 	}
 }
 
-func SetUsername(username string) ClientOptions {
-	return func(c *Client) error {
-		if username == "" {
-			return errors.New("empty username")
-		}
-		c.username = username
-		return nil
-	}
-}
-
-func SetPassword(password string) ClientOptions {
-	return func(c *Client) error {
-		if password == "" {
-			return errors.New("empty password")
-		}
-		c.password = password
-		return nil
-	}
-}
-
 func SetVersion(version string) ClientOptions {
 	return func(c *Client) error {
 		c.version = version
 		if c.version == "" {
 			c.version = DefaultVersion
 		}
+		return nil
+	}
+}
+
+// SetBasicAuth sets the default authentication to Basic Auth with the provided credentials.
+func SetBasicAuth(username, password string) ClientOptions {
+	return func(c *Client) error {
+		if username == "" || password == "" {
+			return errors.New("username and password are required")
+		}
+		c.username = username
+		c.password = password
+		c.authProvider = WithBasicAuth(username, password)
+		return nil
+	}
+}
+
+// SetAuthProvider sets a custom authentication provider.
+func SetAuthProvider(provider AuthProvider) ClientOptions {
+	return func(c *Client) error {
+		if provider == nil {
+			return errors.New("auth provider cannot be nil")
+		}
+		c.authProvider = provider
 		return nil
 	}
 }

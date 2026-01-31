@@ -86,7 +86,7 @@ func (s *searchService) Do(ctx context.Context) (*ResponseData, error) {
 		ctx = context.Background()
 	}
 
-	responseAuth, err := s.client.ConnectWithContext(ctx, s.database)
+	responseAuth, err := s.client.CreateSession(ctx, s.database)
 	if err != nil {
 		return nil, err
 	}
