@@ -102,7 +102,7 @@ func (c *Client) executeQuery(ctx context.Context, options *performRequestOption
 		}
 
 		if response != nil {
-			defer response.Body.Close()
+			defer func() { _ = response.Body.Close() }()
 
 			data, err := io.ReadAll(response.Body)
 			if err != nil {
@@ -224,8 +224,7 @@ func (r *Request) setBodyJson(data any) error {
 		return err
 	}
 	r.Header.Set("Content-Type", "application/json")
-	r.setBodyReader(bytes.NewReader(body))
-	return nil
+	return r.setBodyReader(bytes.NewReader(body))
 }
 
 func (r *Request) setBodyGzip(body any) error {

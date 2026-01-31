@@ -62,7 +62,7 @@ func (g *globalFieldsService) SetGlobalFields(ctx context.Context, database stri
 		}
 	}
 
-	if globalFields == nil || len(globalFields) == 0 {
+	if len(globalFields) == 0 {
 		return nil, &ValidationError{
 			Field:   "globalFields",
 			Message: "at least one global field must be specified",

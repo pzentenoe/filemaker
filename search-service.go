@@ -90,7 +90,10 @@ func (s *searchService) Do(ctx context.Context) (*ResponseData, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer s.client.DisconnectWithContext(ctx, s.database, responseAuth.Response.Token)
+	defer func(client *Client, ctx context.Context, database, token string) {
+		_, _ = client.DisconnectWithContext(ctx, database, token)
+
+	}(s.client, ctx, s.database, responseAuth.Response.Token)
 
 	path := fmt.Sprintf(findQueryPath, s.client.getVersion(), s.database, s.layout)
 

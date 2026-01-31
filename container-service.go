@@ -288,7 +288,7 @@ func (c *containerService) uploadDataInternal(ctx context.Context, database, lay
 				Err:     err,
 			}
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		respBody, err := io.ReadAll(resp.Body)
 		if err != nil {

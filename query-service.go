@@ -52,7 +52,9 @@ func (s *recordService) withAuth(ctx context.Context, fn func(context.Context, s
 	if err != nil {
 		return nil, err
 	}
-	defer s.client.DisconnectWithContext(ctx, s.database, auth.Response.Token)
+	defer func(client *Client, ctx context.Context, database, token string) {
+		_, _ = client.DisconnectWithContext(ctx, database, token)
+	}(s.client, ctx, s.database, auth.Response.Token)
 
 	return fn(ctx, auth.Response.Token)
 }

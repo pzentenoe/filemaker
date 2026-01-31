@@ -15,7 +15,7 @@ type ClientOptions func(*Client) error
 func SetURL(url string) ClientOptions {
 	return func(c *Client) error {
 		if url == "" {
-			return errors.New("Empty url")
+			return errors.New("empty url")
 		}
 		c.url = url
 		return nil
@@ -25,7 +25,7 @@ func SetURL(url string) ClientOptions {
 func SetUsername(username string) ClientOptions {
 	return func(c *Client) error {
 		if username == "" {
-			return errors.New("Empty username")
+			return errors.New("empty username")
 		}
 		c.username = username
 		return nil
@@ -35,7 +35,7 @@ func SetUsername(username string) ClientOptions {
 func SetPassword(password string) ClientOptions {
 	return func(c *Client) error {
 		if password == "" {
-			return errors.New("Empty password")
+			return errors.New("empty password")
 		}
 		c.password = password
 		return nil
