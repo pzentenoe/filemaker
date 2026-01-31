@@ -146,7 +146,7 @@ See [CHANGELOG.md](CHANGELOG.md) for a history of changes to this project.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Copyright (c) 2026 Pablo Zenteno
+Copyright (c) 2024 Pablo Zenteno
 
 ## Author
 
