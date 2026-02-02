@@ -13,7 +13,7 @@
 
 Welcome! This library allows you to interact with your FileMaker Server or Cloud databases using the Go programming language. It is designed to be developer-friendly, abstracting away the raw HTTP requests into a clean, fluent API.
 
-[Official FileMaker Data API Documentation](https://fmhelp.filemaker.com/docs/18/es/dataapi/)
+[Official FileMaker Data API Documentation](https://help.claris.com/archive/docs/18/es/dataapi/)
 
 ## Key Features
 
