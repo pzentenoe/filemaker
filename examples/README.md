@@ -104,3 +104,20 @@ Demonstrates how to set session-scoped global field values.
 ```bash
 go run examples/global_fields/main.go
 ```
+
+### 7. Portal Pagination (v2.0+)
+**Path:** `examples/portal_pagination/main.go`
+Demonstrates advanced portal pagination:
+*   **Portal Configuration**: Control offset and limit for each portal individually.
+*   **SearchService**: Using `SetPortalConfigs()` for portal pagination.
+*   **FindBuilder**: Using `WithPortals()` with fluent interface.
+*   **Performance**: Reducing payload size with large portals.
+
+```bash
+go run examples/portal_pagination/main.go
+```
+
+**New Features in v2.0**:
+- Portal-specific pagination (`_offset.{portal}`, `_limit.{portal}`)
+- Fluent `PortalConfig` builder
+- Better performance with large related datasets

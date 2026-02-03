@@ -56,4 +56,3 @@ resp, err := findBuilder.
     WithPreSortScript("CustomSortLogic", "").
     Do(context.Background())
 ```
-

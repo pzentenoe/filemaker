@@ -51,29 +51,18 @@ func NewGlobalFieldsService(client *Client) GlobalFieldsService {
 //
 // Returns the response from the FileMaker Data API.
 func (g *globalFieldsService) SetGlobalFields(ctx context.Context, database string, globalFields map[string]any, token string) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	ctx = ensureContext(ctx)
+
+	if err := validateDatabase(database); err != nil {
+		return nil, err
 	}
 
-	if database == "" {
-		return nil, &ValidationError{
-			Field:   "database",
-			Message: "database name is required",
-		}
+	if err := validateGlobalFields(globalFields); err != nil {
+		return nil, err
 	}
 
-	if len(globalFields) == 0 {
-		return nil, &ValidationError{
-			Field:   "globalFields",
-			Message: "at least one global field must be specified",
-		}
-	}
-
-	if token == "" {
-		return nil, &ValidationError{
-			Field:   "token",
-			Message: "session token is required",
-		}
+	if err := validateToken(token); err != nil {
+		return nil, err
 	}
 
 	g.client.mu.RLock()
@@ -81,9 +70,6 @@ func (g *globalFieldsService) SetGlobalFields(ctx context.Context, database stri
 	g.client.mu.RUnlock()
 
 	path := fmt.Sprintf(globalFieldsPath, version, database)
-
-	headers := http.Header{}
-	headers.Set("Authorization", "Bearer "+token)
 
 	// Wrap global fields in the expected request format
 	body := map[string]any{
@@ -93,9 +79,9 @@ func (g *globalFieldsService) SetGlobalFields(ctx context.Context, database stri
 	options := &performRequestOptions{
 		Method:      http.MethodPatch,
 		Path:        path,
-		Headers:     headers,
+		Headers:     bearerAuthHeader(token),
 		Body:        body,
-		ContentType: "application/json",
+		ContentType: jsonContentType,
 	}
 
 	return g.client.executeQuery(ctx, options)

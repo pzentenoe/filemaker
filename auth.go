@@ -186,18 +186,12 @@ func (c *Client) ValidateSession(database, token string) (*ResponseData, error) 
 
 // ValidateSessionWithContext checks if a session token is still valid with context.
 func (c *Client) ValidateSessionWithContext(ctx context.Context, database, token string) (*ResponseData, error) {
-	if database == "" {
-		return nil, &ValidationError{
-			Field:   "database",
-			Message: "database name is required",
-		}
+	if err := validateDatabase(database); err != nil {
+		return nil, err
 	}
 
-	if token == "" {
-		return nil, &ValidationError{
-			Field:   "token",
-			Message: "session token is required",
-		}
+	if err := validateToken(token); err != nil {
+		return nil, err
 	}
 
 	version := c.getVersion()

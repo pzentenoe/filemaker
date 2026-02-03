@@ -50,36 +50,22 @@ func NewScriptService(client *Client) ScriptService {
 //
 // The script result is returned in ResponseData.Response.ScriptResult field.
 func (s *scriptService) Execute(ctx context.Context, database, layout, script, scriptParam, token string) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	ctx = ensureContext(ctx)
+
+	if err := validateDatabase(database); err != nil {
+		return nil, err
 	}
 
-	if database == "" {
-		return nil, &ValidationError{
-			Field:   "database",
-			Message: "database name is required",
-		}
+	if err := validateLayout(layout); err != nil {
+		return nil, err
 	}
 
-	if layout == "" {
-		return nil, &ValidationError{
-			Field:   "layout",
-			Message: "layout name is required",
-		}
+	if err := validateScript(script); err != nil {
+		return nil, err
 	}
 
-	if script == "" {
-		return nil, &ValidationError{
-			Field:   "script",
-			Message: "script name is required",
-		}
-	}
-
-	if token == "" {
-		return nil, &ValidationError{
-			Field:   "token",
-			Message: "session token is required",
-		}
+	if err := validateToken(token); err != nil {
+		return nil, err
 	}
 
 	version := s.client.getVersion()
@@ -87,9 +73,6 @@ func (s *scriptService) Execute(ctx context.Context, database, layout, script, s
 	// URL encode the script name to handle special characters
 	encodedScript := url.PathEscape(script)
 	path := fmt.Sprintf(scriptExecutePath, version, database, layout, encodedScript)
-
-	headers := http.Header{}
-	headers.Set("Authorization", "Bearer "+token)
 
 	// Add script parameter as query parameter if provided
 	params := url.Values{}
@@ -101,7 +84,7 @@ func (s *scriptService) Execute(ctx context.Context, database, layout, script, s
 		Method:  http.MethodGet,
 		Path:    path,
 		Params:  params,
-		Headers: headers,
+		Headers: bearerAuthHeader(token),
 	}
 
 	return s.client.executeQuery(ctx, options)
@@ -124,50 +107,30 @@ func (s *scriptService) Execute(ctx context.Context, database, layout, script, s
 // For integrating scripts with record operations, use the script parameters in
 // RecordService methods (e.g., Create with script.prerequest, script.presort).
 func (s *scriptService) ExecuteAfterAction(ctx context.Context, database, layout, recordID, script, scriptParam, token string, action string) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	ctx = ensureContext(ctx)
+
+	if err := validateDatabase(database); err != nil {
+		return nil, err
 	}
 
-	if database == "" {
-		return nil, &ValidationError{
-			Field:   "database",
-			Message: "database name is required",
-		}
+	if err := validateLayout(layout); err != nil {
+		return nil, err
 	}
 
-	if layout == "" {
-		return nil, &ValidationError{
-			Field:   "layout",
-			Message: "layout name is required",
-		}
+	if err := validateRecordID(recordID); err != nil {
+		return nil, err
 	}
 
-	if recordID == "" {
-		return nil, &ValidationError{
-			Field:   "recordID",
-			Message: "record ID is required",
-		}
+	if err := validateScript(script); err != nil {
+		return nil, err
 	}
 
-	if script == "" {
-		return nil, &ValidationError{
-			Field:   "script",
-			Message: "script name is required",
-		}
+	if err := validateToken(token); err != nil {
+		return nil, err
 	}
 
-	if token == "" {
-		return nil, &ValidationError{
-			Field:   "token",
-			Message: "session token is required",
-		}
-	}
-
-	if action == "" {
-		return nil, &ValidationError{
-			Field:   "action",
-			Message: "action is required (create, edit, delete)",
-		}
+	if err := validateAction(action); err != nil {
+		return nil, err
 	}
 
 	version := s.client.getVersion()
@@ -196,9 +159,6 @@ func (s *scriptService) ExecuteAfterAction(ctx context.Context, database, layout
 		}
 	}
 
-	headers := http.Header{}
-	headers.Set("Authorization", "Bearer "+token)
-
 	// Add script execution parameters
 	params := url.Values{}
 	params.Set("script", script)
@@ -210,9 +170,9 @@ func (s *scriptService) ExecuteAfterAction(ctx context.Context, database, layout
 		Method:      method,
 		Path:        path,
 		Params:      params,
-		Headers:     headers,
+		Headers:     bearerAuthHeader(token),
 		Body:        body,
-		ContentType: "application/json",
+		ContentType: jsonContentType,
 	}
 
 	return s.client.executeQuery(ctx, options)

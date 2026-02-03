@@ -60,15 +60,10 @@ func NewContainerService(client *Client) ContainerService {
 //
 // Returns an io.ReadCloser containing the file data. The caller is responsible for closing it.
 func (c *containerService) Download(ctx context.Context, url string, token string) (io.ReadCloser, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ensureContext(ctx)
 
-	if url == "" {
-		return nil, &ValidationError{
-			Field:   "url",
-			Message: "url is required",
-		}
+	if err := validateURL(url); err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -143,26 +138,18 @@ func (c *containerService) UploadFile(ctx context.Context, database, layout, rec
 //
 // Returns the response from the FileMaker Data API.
 func (c *containerService) UploadFileWithRepetition(ctx context.Context, database, layout, recordID, fieldName, filePath, token string, repetition int) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ensureContext(ctx)
 
 	if err := c.validateCommonParams(database, layout, recordID, fieldName, token); err != nil {
 		return nil, err
 	}
 
-	if filePath == "" {
-		return nil, &ValidationError{
-			Field:   "filePath",
-			Message: "file path is required",
-		}
+	if err := validateFilePath(filePath); err != nil {
+		return nil, err
 	}
 
-	if repetition < 1 {
-		return nil, &ValidationError{
-			Field:   "repetition",
-			Message: "repetition must be >= 1",
-		}
+	if err := validateRepetition(repetition); err != nil {
+		return nil, err
 	}
 
 	// Read the file
@@ -216,33 +203,22 @@ func (c *containerService) UploadData(ctx context.Context, database, layout, rec
 //
 // Returns the response from the FileMaker Data API.
 func (c *containerService) UploadDataWithRepetition(ctx context.Context, database, layout, recordID, fieldName, filename string, data []byte, token string, repetition int) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ensureContext(ctx)
 
 	if err := c.validateCommonParams(database, layout, recordID, fieldName, token); err != nil {
 		return nil, err
 	}
 
-	if filename == "" {
-		return nil, &ValidationError{
-			Field:   "filename",
-			Message: "filename is required",
-		}
+	if err := validateFilename(filename); err != nil {
+		return nil, err
 	}
 
-	if len(data) == 0 {
-		return nil, &ValidationError{
-			Field:   "data",
-			Message: "file data cannot be empty",
-		}
+	if err := validateFileData(data); err != nil {
+		return nil, err
 	}
 
-	if repetition < 1 {
-		return nil, &ValidationError{
-			Field:   "repetition",
-			Message: "repetition must be >= 1",
-		}
+	if err := validateRepetition(repetition); err != nil {
+		return nil, err
 	}
 
 	return c.uploadDataInternal(ctx, database, layout, recordID, fieldName, filename, data, token, repetition)
@@ -250,39 +226,24 @@ func (c *containerService) UploadDataWithRepetition(ctx context.Context, databas
 
 // validateCommonParams validates common parameters used across container methods.
 func (c *containerService) validateCommonParams(database, layout, recordID, fieldName, token string) error {
-	if database == "" {
-		return &ValidationError{
-			Field:   "database",
-			Message: "database name is required",
-		}
+	if err := validateDatabase(database); err != nil {
+		return err
 	}
 
-	if layout == "" {
-		return &ValidationError{
-			Field:   "layout",
-			Message: "layout name is required",
-		}
+	if err := validateLayout(layout); err != nil {
+		return err
 	}
 
-	if recordID == "" {
-		return &ValidationError{
-			Field:   "recordID",
-			Message: "record ID is required",
-		}
+	if err := validateRecordID(recordID); err != nil {
+		return err
 	}
 
-	if fieldName == "" {
-		return &ValidationError{
-			Field:   "fieldName",
-			Message: "field name is required",
-		}
+	if err := validateFieldName(fieldName); err != nil {
+		return err
 	}
 
-	if token == "" {
-		return &ValidationError{
-			Field:   "token",
-			Message: "session token is required",
-		}
+	if err := validateToken(token); err != nil {
+		return err
 	}
 
 	return nil

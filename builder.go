@@ -248,14 +248,15 @@ func (rb *RecordBuilder) List(ctx context.Context) (*ResponseData, error) {
 
 // FindBuilder provides a fluent interface for building complex find operations.
 type FindBuilder struct {
-	client   *Client
-	database string
-	layout   string
-	queries  []*groupQuery
-	sorters  []*Sorter
-	offset   string
-	limit    string
-	ctx      context.Context
+	client        *Client
+	database      string
+	layout        string
+	queries       []*groupQuery
+	sorters       []*Sorter
+	offset        string
+	limit         string
+	portalConfigs []*PortalConfig
+	ctx           context.Context
 }
 
 // NewFindBuilder creates a new FindBuilder for the specified database and layout.
@@ -330,6 +331,18 @@ func (fb *FindBuilder) Limit(limit int) *FindBuilder {
 	return fb
 }
 
+// WithPortals configures which portals to include with optional pagination.
+// Example:
+//
+//	builder.WithPortals(
+//	    NewPortalConfig("RelatedOrders").WithOffset(1).WithLimit(10),
+//	    NewPortalConfig("RelatedPayments").WithOffset(1).WithLimit(5),
+//	)
+func (fb *FindBuilder) WithPortals(configs ...*PortalConfig) *FindBuilder {
+	fb.portalConfigs = configs
+	return fb
+}
+
 // Execute performs the find operation with the configured criteria.
 func (fb *FindBuilder) Execute(ctx context.Context) (*ResponseData, error) {
 	if ctx == nil {
@@ -351,6 +364,10 @@ func (fb *FindBuilder) Execute(ctx context.Context) (*ResponseData, error) {
 
 	if fb.limit != "" {
 		service.SetLimit(fb.limit)
+	}
+
+	if len(fb.portalConfigs) > 0 {
+		service.SetPortalConfigs(fb.portalConfigs...)
 	}
 
 	return service.Do(ctx)

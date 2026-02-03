@@ -6,6 +6,22 @@ import (
 	"net/http"
 )
 
+// FileMaker Data API error codes.
+const (
+	// ErrCodeInvalidUserPassword indicates invalid username or password.
+	ErrCodeInvalidUserPassword = "212"
+	// ErrCodeNoAccessPrivileges indicates account does not have access privileges.
+	ErrCodeNoAccessPrivileges = "214"
+
+	// ErrCodeHostUnavailable indicates host is unavailable (retryable).
+	ErrCodeHostUnavailable = "952"
+	// ErrCodeTooManyFilesOpen indicates too many files open (retryable).
+	ErrCodeTooManyFilesOpen = "953"
+
+	// ErrCodeSuccess indicates no error occurred.
+	ErrCodeSuccess = "0"
+)
+
 // FileMakerError represents an error returned by the FileMaker Data API.
 // It includes the error code, message, and HTTP status code.
 type FileMakerError struct {
@@ -160,9 +176,9 @@ func IsRetryable(err error) bool {
 	if errors.As(err, &fmErr) {
 		// Retryable FileMaker error codes
 		switch fmErr.Code {
-		case "952": // Host unavailable
+		case ErrCodeHostUnavailable: // Host unavailable
 			return true
-		case "953": // Too many files open
+		case ErrCodeTooManyFilesOpen: // Too many files open
 			return true
 		}
 
@@ -202,11 +218,9 @@ func IsAuthError(err error) bool {
 	if errors.As(err, &fmErr) {
 		// FileMaker authentication error codes
 		switch fmErr.Code {
-		case "212": // Invalid username or password
+		case ErrCodeInvalidUserPassword: // Invalid username or password
 			return true
-		case "214": // Account name does not have access privileges
-			return true
-		case "952": // Invalid FileMaker Data API token
+		case ErrCodeNoAccessPrivileges: // Account name does not have access privileges
 			return true
 		}
 
@@ -240,7 +254,7 @@ func ParseFileMakerError(response *ResponseData, httpStatus int) error {
 	msg := response.Messages[0]
 
 	// Error code "0" means success in FileMaker
-	if msg.Code == "0" {
+	if msg.Code == ErrCodeSuccess {
 		return nil
 	}
 
