@@ -493,9 +493,9 @@ func TestIsAuthError(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "filemaker invalid token",
+			name: "filemaker host unavailable (not auth error)",
 			err:  &FileMakerError{Code: "952"},
-			want: true,
+			want: false, // 952 is a connectivity error, not an auth error
 		},
 		{
 			name: "http unauthorized",

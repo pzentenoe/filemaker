@@ -47,9 +47,7 @@ type Payload struct {
 // withAuth wraps a function with authentication session management.
 // It handles context initialization, session creation, and cleanup.
 func (s *recordService) withAuth(ctx context.Context, fn func(context.Context, string) (*ResponseData, error)) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ensureContext(ctx)
 
 	auth, err := s.client.CreateSession(ctx, s.database)
 	if err != nil {
@@ -69,11 +67,9 @@ func (s *recordService) Create(ctx context.Context, payload *Payload) (*Response
 		options := &performRequestOptions{
 			Method:      http.MethodPost,
 			Path:        path,
-			ContentType: "application/json",
+			ContentType: jsonContentType,
 			Body:        payload,
-			Headers: http.Header{
-				"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
-			},
+			Headers:     bearerAuthHeader(token),
 		}
 		return s.client.executeQuery(ctx, options)
 	})
@@ -86,11 +82,9 @@ func (s *recordService) Edit(ctx context.Context, recordId string, payload *Payl
 		options := &performRequestOptions{
 			Method:      http.MethodPatch,
 			Path:        path,
-			ContentType: "application/json",
+			ContentType: jsonContentType,
 			Body:        payload,
-			Headers: http.Header{
-				"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
-			},
+			Headers:     bearerAuthHeader(token),
 		}
 		return s.client.executeQuery(ctx, options)
 	})
@@ -103,10 +97,8 @@ func (s *recordService) Duplicate(ctx context.Context, recordId string) (*Respon
 		options := &performRequestOptions{
 			Method:      http.MethodPost,
 			Path:        path,
-			ContentType: "application/json",
-			Headers: http.Header{
-				"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
-			},
+			ContentType: jsonContentType,
+			Headers:     bearerAuthHeader(token),
 		}
 		return s.client.executeQuery(ctx, options)
 	})
@@ -123,12 +115,10 @@ func (s *recordService) Delete(ctx context.Context, recordId string, deleteRelat
 		}
 
 		options := &performRequestOptions{
-			Method: http.MethodDelete,
-			Path:   path,
-			Params: params,
-			Headers: http.Header{
-				"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
-			},
+			Method:  http.MethodDelete,
+			Path:    path,
+			Params:  params,
+			Headers: bearerAuthHeader(token),
 		}
 		return s.client.executeQuery(ctx, options)
 	})
@@ -139,11 +129,9 @@ func (s *recordService) GetById(ctx context.Context, recordId string) (*Response
 	return s.withAuth(ctx, func(ctx context.Context, token string) (*ResponseData, error) {
 		path := fmt.Sprintf(recordsPath+"/%s", s.client.getVersion(), s.database, s.layout, recordId)
 		options := &performRequestOptions{
-			Method: http.MethodGet,
-			Path:   path,
-			Headers: http.Header{
-				"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
-			},
+			Method:  http.MethodGet,
+			Path:    path,
+			Headers: bearerAuthHeader(token),
 		}
 		return s.client.executeQuery(ctx, options)
 	})
@@ -165,12 +153,10 @@ func (s *recordService) List(ctx context.Context, offset, limit string, sorters 
 		}
 
 		options := &performRequestOptions{
-			Method: http.MethodGet,
-			Path:   path,
-			Params: params,
-			Headers: http.Header{
-				"Authorization": []string{fmt.Sprintf("Bearer %s", token)},
-			},
+			Method:  http.MethodGet,
+			Path:    path,
+			Params:  params,
+			Headers: bearerAuthHeader(token),
 		}
 		return s.client.executeQuery(ctx, options)
 	})

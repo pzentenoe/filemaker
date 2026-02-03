@@ -32,6 +32,7 @@ Welcome! This library allows you to interact with your FileMaker Server or Cloud
     *   Complex queries with **AND** / **OR** logic
     *   FileMaker find operators (e.g., `==`, `...`, `>`, etc.)
     *   Sorting and Pagination (`Limit`, `Offset`)
+    *   **Portal Pagination** (v2.0+): Individual offset/limit per portal
 *   **📜 Script Execution**:
     *   Run standalone scripts
     *   Trigger scripts **Pre-Request**, **Pre-Sort**, or **After-Request** during record operations
@@ -77,7 +78,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	
+
 	"github.com/pzentenoe/filemaker"
 )
 

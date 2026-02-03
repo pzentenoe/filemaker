@@ -750,3 +750,52 @@ func TestSessionBuilder_Token(t *testing.T) {
 		t.Errorf("expected token test-token, got %s", token)
 	}
 }
+
+func TestFindBuilder_WithPortals(t *testing.T) {
+	client, _ := NewClient(SetURL("https://test.com"))
+	builder := NewFindBuilder(client, "TestDB", "TestLayout")
+
+	config1 := NewPortalConfig("Portal1").WithOffset(1).WithLimit(10)
+	config2 := NewPortalConfig("Portal2").WithOffset(5).WithLimit(20)
+
+	builder.WithPortals(config1, config2)
+
+	if len(builder.portalConfigs) != 2 {
+		t.Errorf("expected 2 portal configs, got %d", len(builder.portalConfigs))
+	}
+
+	if builder.portalConfigs[0].Name != "Portal1" {
+		t.Errorf("expected first portal to be 'Portal1', got '%s'", builder.portalConfigs[0].Name)
+	}
+
+	if builder.portalConfigs[1].Name != "Portal2" {
+		t.Errorf("expected second portal to be 'Portal2', got '%s'", builder.portalConfigs[1].Name)
+	}
+}
+
+func TestFindBuilder_WithPortals_Chaining(t *testing.T) {
+	client, _ := NewClient(SetURL("https://test.com"))
+	builder := NewFindBuilder(client, "Contacts", "ContactList").
+		Where("Status", Equal, "Active").
+		WithPortals(
+			NewPortalConfig("RelatedOrders").WithOffset(1).WithLimit(5),
+		).
+		OrderBy("LastName", Ascending).
+		Limit(50)
+
+	if len(builder.portalConfigs) != 1 {
+		t.Errorf("expected 1 portal config, got %d", len(builder.portalConfigs))
+	}
+
+	if builder.portalConfigs[0].Name != "RelatedOrders" {
+		t.Errorf("expected portal name 'RelatedOrders', got '%s'", builder.portalConfigs[0].Name)
+	}
+
+	if builder.portalConfigs[0].Offset != 1 {
+		t.Errorf("expected portal offset 1, got %d", builder.portalConfigs[0].Offset)
+	}
+
+	if builder.portalConfigs[0].Limit != 5 {
+		t.Errorf("expected portal limit 5, got %d", builder.portalConfigs[0].Limit)
+	}
+}

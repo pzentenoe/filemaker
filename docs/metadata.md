@@ -64,4 +64,3 @@ Retrieves detailed information about a specific layout, including fields, value 
 resp, err := metadataService.GetLayoutMetadata(context.Background(), "MyDatabase", "LayoutName", token)
 fmt.Printf("Field Count: %d\n", len(resp.Response.FieldMetaData))
 ```
-

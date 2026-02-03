@@ -49,9 +49,7 @@ func NewMetadataService(client *Client) MetadataService {
 // GetDatabases retrieves a list of all hosted databases accessible by the authenticated user.
 // This endpoint does not require a session token.
 func (m *metadataService) GetDatabases(ctx context.Context) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ensureContext(ctx)
 
 	m.client.mu.RLock()
 	version := m.client.version
@@ -75,22 +73,14 @@ func (m *metadataService) GetDatabases(ctx context.Context) (*ResponseData, erro
 // GetLayouts retrieves a list of all layouts in the specified database.
 // Requires a valid session token obtained from Connect or ConnectWithDatasource.
 func (m *metadataService) GetLayouts(ctx context.Context, database, token string) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	ctx = ensureContext(ctx)
+
+	if err := validateDatabase(database); err != nil {
+		return nil, err
 	}
 
-	if database == "" {
-		return nil, &ValidationError{
-			Field:   "database",
-			Message: "database name is required",
-		}
-	}
-
-	if token == "" {
-		return nil, &ValidationError{
-			Field:   "token",
-			Message: "session token is required",
-		}
+	if err := validateToken(token); err != nil {
+		return nil, err
 	}
 
 	m.client.mu.RLock()
@@ -99,13 +89,10 @@ func (m *metadataService) GetLayouts(ctx context.Context, database, token string
 
 	path := fmt.Sprintf(layoutsPath, version, database)
 
-	headers := http.Header{}
-	headers.Set("Authorization", "Bearer "+token)
-
 	options := &performRequestOptions{
 		Method:  http.MethodGet,
 		Path:    path,
-		Headers: headers,
+		Headers: bearerAuthHeader(token),
 	}
 
 	return m.client.executeQuery(ctx, options)
@@ -115,29 +102,18 @@ func (m *metadataService) GetLayouts(ctx context.Context, database, token string
 // The response includes field definitions, value lists, portal information,
 // and relationships.
 func (m *metadataService) GetLayoutMetadata(ctx context.Context, database, layout, token string) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	ctx = ensureContext(ctx)
+
+	if err := validateDatabase(database); err != nil {
+		return nil, err
 	}
 
-	if database == "" {
-		return nil, &ValidationError{
-			Field:   "database",
-			Message: "database name is required",
-		}
+	if err := validateLayout(layout); err != nil {
+		return nil, err
 	}
 
-	if layout == "" {
-		return nil, &ValidationError{
-			Field:   "layout",
-			Message: "layout name is required",
-		}
-	}
-
-	if token == "" {
-		return nil, &ValidationError{
-			Field:   "token",
-			Message: "session token is required",
-		}
+	if err := validateToken(token); err != nil {
+		return nil, err
 	}
 
 	m.client.mu.RLock()
@@ -146,13 +122,10 @@ func (m *metadataService) GetLayoutMetadata(ctx context.Context, database, layou
 
 	path := fmt.Sprintf(layoutMetadataPath, version, database, layout)
 
-	headers := http.Header{}
-	headers.Set("Authorization", "Bearer "+token)
-
 	options := &performRequestOptions{
 		Method:  http.MethodGet,
 		Path:    path,
-		Headers: headers,
+		Headers: bearerAuthHeader(token),
 	}
 
 	return m.client.executeQuery(ctx, options)
@@ -161,22 +134,14 @@ func (m *metadataService) GetLayoutMetadata(ctx context.Context, database, layou
 // GetScripts retrieves a list of all scripts in the specified database.
 // Only scripts that are configured to be accessible from the Data API are returned.
 func (m *metadataService) GetScripts(ctx context.Context, database, token string) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
+	ctx = ensureContext(ctx)
+
+	if err := validateDatabase(database); err != nil {
+		return nil, err
 	}
 
-	if database == "" {
-		return nil, &ValidationError{
-			Field:   "database",
-			Message: "database name is required",
-		}
-	}
-
-	if token == "" {
-		return nil, &ValidationError{
-			Field:   "token",
-			Message: "session token is required",
-		}
+	if err := validateToken(token); err != nil {
+		return nil, err
 	}
 
 	m.client.mu.RLock()
@@ -185,13 +150,10 @@ func (m *metadataService) GetScripts(ctx context.Context, database, token string
 
 	path := fmt.Sprintf(scriptsPath, version, database)
 
-	headers := http.Header{}
-	headers.Set("Authorization", "Bearer "+token)
-
 	options := &performRequestOptions{
 		Method:  http.MethodGet,
 		Path:    path,
-		Headers: headers,
+		Headers: bearerAuthHeader(token),
 	}
 
 	return m.client.executeQuery(ctx, options)
@@ -201,9 +163,7 @@ func (m *metadataService) GetScripts(ctx context.Context, database, token string
 // This includes version, build number, server name, date/time formats, and locale.
 // This endpoint does not require a session token.
 func (m *metadataService) GetProductInfo(ctx context.Context) (*ResponseData, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	ctx = ensureContext(ctx)
 
 	m.client.mu.RLock()
 	version := m.client.version
